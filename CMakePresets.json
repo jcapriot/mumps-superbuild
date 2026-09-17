@@ -90,6 +90,31 @@
   }
 },
 {
+  "name": "accelerate", "inherits": "default",
+  "displayName": "macOS Accelerate, sequential, OpenMP, METIS + Scotch",
+  "description": "Apple Accelerate for BLAS/LAPACK. OpenMP on macOS needs a GCC toolchain, since AppleClang has no OpenMP without libomp; bump the Homebrew GCC version suffix below as it advances.",
+  "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" },
+  "binaryDir": "build-${presetName}",
+  "installDir": "${fileDir}/build-${presetName}/local",
+  "cacheVariables": {
+    "CMAKE_C_COMPILER": "gcc-16",
+    "CMAKE_Fortran_COMPILER": "gfortran-16",
+    "LAPACK_VENDOR": "Accelerate",
+    "BUILD_SHARED_LIBS": true,
+    "MUMPS_ENABLE_RPATH": true,
+    "MUMPS_parallel": false,
+    "MUMPS_openmp": true,
+    "MUMPS_metis": true,
+    "MUMPS_scotch": true,
+    "MUMPS_ptscotch": false,
+    "BUILD_SINGLE": true,
+    "BUILD_COMPLEX": true,
+    "BUILD_COMPLEX16": true,
+    "MUMPS_gemmt": false,
+    "MUMPS_avx512": false
+  }
+},
+{
   "name": "matlab", "inherits": "nompi",
   "binaryDir": "build-matlab",
   "installDir": "${fileDir}/build-matlab/local",
@@ -180,7 +205,8 @@
   { "name": "scotch-metis", "configurePreset": "scotch-metis", "inherits": "default" },
   { "name": "scotch-parmetis", "configurePreset": "scotch-parmetis", "inherits": "scotch" },
   { "name": "parmetis", "configurePreset": "parmetis", "inherits": "default" },
-  { "name": "nompi", "configurePreset": "nompi", "inherits": "default" }
+  { "name": "nompi", "configurePreset": "nompi", "inherits": "default" },
+  { "name": "accelerate", "configurePreset": "accelerate", "inherits": "default" }
 ],
 "testPresets": [
 {
@@ -223,7 +249,8 @@
 { "name": "scotch-metis", "configurePreset": "scotch-metis", "inherits": "default" },
 { "name": "scotch-parmetis", "configurePreset": "scotch-parmetis", "inherits": "scotch" },
 { "name": "parmetis", "configurePreset": "parmetis", "inherits": "default" },
-{ "name": "nompi", "configurePreset": "nompi", "inherits": "default" }
+{ "name": "nompi", "configurePreset": "nompi", "inherits": "default" },
+{ "name": "accelerate", "configurePreset": "accelerate", "inherits": "default" }
 ],
 "workflowPresets": [
   { "name": "default", "displayName": "Build and Test in Release mode",
@@ -286,6 +313,13 @@
       { "type": "configure", "name": "shared" },
       { "type": "build", "name": "shared" },
       { "type": "test", "name": "shared" }
+    ]
+  },
+  { "name": "accelerate", "displayName": "Build and Test with Apple Accelerate",
+    "steps": [
+      { "type": "configure", "name": "accelerate" },
+      { "type": "build", "name": "accelerate" },
+      { "type": "test", "name": "accelerate" }
     ]
   },
   {

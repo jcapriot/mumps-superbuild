@@ -275,12 +275,12 @@ if(MUMPS_metis OR MUMPS_parmetis)
     endif()
   endif()
 
-  FetchContent_Declare(mumps_metis
+  FetchContent_Declare(METIS
   URL ${metis_url}
   FIND_PACKAGE_ARGS ${_metis_components}
   )
 
-  FetchContent_MakeAvailable(mumps_metis)
+  FetchContent_MakeAvailable(METIS)
 
   list(APPEND ORDERING_DEFS REALTYPEWIDTH=32 IDXTYPEWIDTH=${IDXTYPEWIDTH} metis)
 

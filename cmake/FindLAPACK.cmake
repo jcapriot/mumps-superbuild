@@ -35,6 +35,12 @@ COMPONENTS
 ``OpenMP``
   use OpenMP if supported by library (default is sequential)
 
+``Accelerate``
+  Apple Accelerate framework (macOS only). Provides BLAS and the legacy LAPACK 3.2.1 Fortran ABI,
+  which is sufficient for MUMPS. It has no GEMMT extension, so use MUMPS_gemmt=off.
+  Accelerate only exposes its ILP64 entry points as ``<name>$NEWLAPACK$ILP64`` symbols, which
+  plain Fortran cannot reach, so the INT64 component is not supported. See Readme_LAPACK.md
+
 ``AOCL``
   AMD LAPACK fork of Netlib LAPACK.
   Requires LAPACK AOCL
@@ -92,6 +98,12 @@ if(NOT Fortran IN_LIST enabled_langs)
   return()
 endif()
 
+# check_source_compiles caches its result, so the result variable has to be keyed on the
+# candidate library. Otherwise the first candidate that fails to link -- a static library
+# needing extra link libraries, say -- caches a negative result, and the test is then skipped
+# for every later candidate, rejecting libraries that do work.
+string(MAKE_C_IDENTIFIER "${path}" _id)
+
 set(CMAKE_REQUIRED_FLAGS)
 set(CMAKE_REQUIRED_LINK_OPTIONS)
 set(CMAKE_REQUIRED_INCLUDES)
@@ -104,9 +116,9 @@ implicit none
 real(rk), external :: snrm2
 print *, snrm2(1, [0._rk], 1)
 end program"
-LAPACK_s_FOUND
+LAPACK_s_FOUND_${_id}
 )
-if(LAPACK_s_FOUND)
+if(LAPACK_s_FOUND_${_id})
   return()
 endif()
 
@@ -117,9 +129,9 @@ implicit none
 real(rk), external :: dnrm2
 print *, dnrm2(1, [0._rk], 1)
 end program"
-LAPACK_d_FOUND
+LAPACK_d_FOUND_${_id}
 )
-if(LAPACK_d_FOUND)
+if(LAPACK_d_FOUND_${_id})
   return()
 endif()
 
@@ -130,9 +142,9 @@ implicit none
 real(rk), external :: scnrm2
 print *, scnrm2(1, [(0._rk, 0._rk)], 1)
 end program"
-LAPACK_c_FOUND
+LAPACK_c_FOUND_${_id}
 )
-if(LAPACK_c_FOUND)
+if(LAPACK_c_FOUND_${_id})
   return()
 endif()
 
@@ -143,9 +155,9 @@ implicit none
 real(rk), external :: dznrm2
 print *, dznrm2(1, [(0._rk, 0._rk)], 1)
 end program"
-LAPACK_z_FOUND
+LAPACK_z_FOUND_${_id}
 )
-if(LAPACK_z_FOUND)
+if(LAPACK_z_FOUND_${_id})
   return()
 endif()
 
@@ -283,6 +295,35 @@ if(LAPACK_LIBRARY AND LAPACK_INCLUDE_DIR)
 
   set(LAPACK_LIBRARIES ${LAPACK_LIBRARY} PARENT_SCOPE)
   set(LAPACK_INCLUDE_DIRS ${LAPACK_INCLUDE_DIR} PARENT_SCOPE)
+endif()
+
+endfunction()
+
+
+#===============================
+function(lapack_accelerate)
+
+if(NOT APPLE)
+  message(FATAL_ERROR "LAPACK_VENDOR=Accelerate is only available on macOS")
+endif()
+
+# There is no threading option to select here. Accelerate's BLAS threading is a runtime setting
+# (BLASSetThreading(), macOS >= 15) that already defaults to "Accelerate decides", which on Apple
+# silicon currently means one thread. MUMPS_openmp is what provides shared-memory parallelism with
+# Accelerate. See Readme_LAPACK.md, which also notes that BLASSetThreading is thread-local.
+
+if(INT64 IN_LIST LAPACK_FIND_COMPONENTS)
+  message(FATAL_ERROR "Accelerate does not expose an ILP64 Fortran ABI. See Readme_LAPACK.md")
+endif()
+
+find_library(LAPACK_LIBRARY
+NAMES Accelerate
+DOC "Apple Accelerate framework (BLAS + LAPACK)"
+)
+
+if(LAPACK_LIBRARY)
+  set(LAPACK_Accelerate_FOUND true PARENT_SCOPE)
+  set(LAPACK_LIBRARIES ${LAPACK_LIBRARY} PARENT_SCOPE)
 endif()
 
 endfunction()
@@ -463,6 +504,8 @@ elseif(OpenBLAS IN_LIST LAPACK_FIND_COMPONENTS)
   lapack_openblas()
 elseif(AOCL IN_LIST LAPACK_FIND_COMPONENTS)
   lapack_aocl()
+elseif(Accelerate IN_LIST LAPACK_FIND_COMPONENTS)
+  lapack_accelerate()
 elseif(LAPACK_CRAY)
   # LAPACK is implicitly part of Cray PE LibSci, use Cray compiler wrapper.
 elseif(DEFINED ENV{MKLROOT} AND IS_DIRECTORY "$ENV{MKLROOT}")

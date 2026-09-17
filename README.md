@@ -216,7 +216,45 @@ cmake --workflow default
 
 ## Using binary libraries
 
-Linking the MUMPS binaries into a user-program is project-dependent.
+### From CMake
+
+The install ships a CMake package. Point `CMAKE_PREFIX_PATH` at the install prefix and link the
+arithmetic targets you need:
+
+```cmake
+find_package(MUMPS CONFIG REQUIRED)
+target_link_libraries(myapp PRIVATE MUMPS::DMUMPS)   # or MUMPS::MUMPS for every arithmetic built
+```
+
+```sh
+cmake -B build -DCMAKE_PREFIX_PATH=~/.local
+```
+
+Consumers that enable only C are supported; the package does not require the consumer to have a
+Fortran compiler or OpenMP.
+
+### From Meson, Autotools or a plain Makefile
+
+The install also ships pkg-config files, one per enabled arithmetic: `smumps.pc`, `dmumps.pc`,
+`cmumps.pc`, `zmumps.pc`. They land in `<prefix>/lib/pkgconfig`, which is not on pkg-config's
+default search path for a non-system prefix, so point `PKG_CONFIG_PATH` at it:
+
+```sh
+export PKG_CONFIG_PATH=~/.local/lib/pkgconfig
+pkg-config --cflags --libs dmumps
+```
+
+External dependencies (LAPACK, the ordering libraries, the OpenMP runtime) are reported in
+`Libs.private`, so they appear only with `pkg-config --static`. A shared MUMPS records them
+itself and consumers do not need them.
+
+In Meson:
+
+```meson
+dmumps = dependency('dmumps')
+```
+
+Linking the MUMPS binaries into a user-program by hand is project-dependent.
 An example using the examples in this project with GNU GCC, using the "mpicxx" MPI compiler wrapper:
 
 ```sh
