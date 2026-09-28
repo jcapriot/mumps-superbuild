@@ -1,9 +1,9 @@
-# CMake >= 3.28 strongly recommended for build graph reliability
-cmake_minimum_required(VERSION 3.25...4.5)
+cmake_minimum_required(VERSION 3.26...4.5)
+# CMake >= 3.26 as Scalapack build gives confusing errors and even closes Terminal with too old CMake.
+# CMake >= 3.25 for block(), VALIDATOR on find_*()
 # CMake >= 3.24 for FetchContent FIND_PACKAGE_ARGS
-# CMAKE >= 3.25 for block(), VALIDATOR on find_*()
 
-set(MUMPS_PROJECT_VERSION 5.9.1.1)
+set(MUMPS_PROJECT_VERSION 5.9.1.2)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "Please use out of source build:
@@ -76,10 +76,6 @@ VERSION ${MUMPS_PROJECT_VERSION}
 DESCRIPTION "Sparse direct parallel solver"
 HOMEPAGE_URL "https://mumps-solver.org/"
 )
-if(CMAKE_VERSION VERSION_LESS 3.28)
-  message(WARNING "CMake >= 3.28 is strongly recommended for reliable build graph and minimal rebuilds, but you are using ${CMAKE_VERSION}.
-  Consider upgrading CMake if you experience build failures.")
-endif()
 
 if(CMAKE_VERSION VERSION_GREATER 3.30.0 AND CMAKE_VERSION VERSION_LESS 3.30.4)
 cmake_policy(SET CMP0168 OLD)
@@ -269,6 +265,7 @@ if(MUMPS_metis OR MUMPS_parmetis)
   # Check if 'metis_url' hasn't been defined by the user (with -D)
   if(NOT DEFINED metis_url)
     if(MUMPS_parmetis)
+      list(APPEND ORDERING_DEFS parmetis)
       string(JSON metis_url GET "${json}" "parmetis")
     else()
       string(JSON metis_url GET "${json}" "metis")
