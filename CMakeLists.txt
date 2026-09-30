@@ -77,7 +77,7 @@ DESCRIPTION "Sparse direct parallel solver"
 HOMEPAGE_URL "https://mumps-solver.org/"
 )
 
-if(CMAKE_VERSION VERSION_GREATER 3.30.0 AND CMAKE_VERSION VERSION_LESS 3.30.4)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30.0 AND CMAKE_VERSION VERSION_LESS 3.30.4)
 cmake_policy(SET CMP0168 OLD)
 # workaround to stop repeat FetchContent download on each configure for CMake 3.30.0..3.30.3
 endif()
