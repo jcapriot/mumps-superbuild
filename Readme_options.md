@@ -18,7 +18,9 @@ option(BUILD_COMPLEX16 "Build double precision complex")
 
 ## GPU
 
-Optionally CUDA GPU acceleration can be enabled with:
+Optionally CUDA GPU acceleration - requires CUDA GPU hardware and
+[CUDA Toolkit](https://developer.nvidia.com/cuda/toolkit)
+software - can be enabled with:
 
 ```cmake
 cmake -DMUMPS_gpu=on
@@ -33,7 +35,7 @@ cmake -DMUMPS_xkblas=on -DMUMPS_gpu=on
 ## Integer size
 
 The default integer size is 32-bit.
-64-bit integers can be enabled with:
+64-bit integers necessary for large matrix systems when 32-bit integers are insufficient to describe the problem size can be enabled with:
 
 ```cmake
 cmake -DMUMPS_intsize64=on
@@ -41,19 +43,20 @@ cmake -DMUMPS_intsize64=on
 
 HOWEVER, this requires all libraries INCLUDING MPI to be compiled with 64-bit integers.
 Otherwise, the program will crash at runtime with MPI errors.
-For example, oneAPI / oneMPI work, but default system installs of OpenMPI / MPICH will generally fail--the user will need to specially compile an MPI library with 64-bit integers.
+For example, oneAPI / oneMPI work, but default system installs of OpenMPI / MPICH will generally fail.
+The user will need to specially compile or install an MPI library with 64-bit integers.
 
 ## ScaLAPACK
 
 ScaLAPACK is only used for `MUMPS_parallel=on`.
-ScaLAPACK can be omitted with MUMPS &ge; 5.7.0 by option:
+ScaLAPACK can be omitted by option:
 
 ```sh
 cmake -DMUMPS_scalapack=off
 ```
 
-To control whether to first look for Scalapack and only if needed automatically build ScaLAPACK,
-Optionally, specify the location of Scalapack with CMake option `-DSCALAPACK_ROOT=/path/to/scalapack"
+MUMPS superbuild will first look for Scalapack and if needed automatically build ScaLAPACK.
+Optionally, specify the location of Scalapack with CMake option:
 
 ```sh
 cmake -DSCALAPACK_ROOT=/path/to/scalapack
@@ -67,7 +70,7 @@ cmake -DFETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER
 
 ## MPI
 
-For systems where MPI, BLACS and SCALAPACK are not available, or where non-parallel execution is suitable, the default `MUMPS_parallel=true` can be disabled at CMake configure time by option:
+For systems where MPI and SCALAPACK are not available, or where non-parallel execution is suitable, the default `MUMPS_parallel=true` can be disabled at CMake configure time by option:
 
 ```sh
 cmake -DMUMPS_parallel=false
@@ -79,7 +82,7 @@ The MUMPS version defaults to a recent release.
 For reproducibility, benchmarking and other purposes, one may select the version of MUMPS to build like:
 
 ```sh
-cmake -B build -DMUMPS_UPSTREAM_VERSION=5.8.0
+cmake -B build -DMUMPS_UPSTREAM_VERSION=5.9.1
 ```
 
 The source URL may be directly specified, which may be a local file or remote URL:
@@ -107,7 +110,7 @@ The CMake configure option `DMUMPS_avx512vbmi=true` will activate this feature i
 The CMake configuration will fail if the compiler or CPU doesn't support the requested AVX-512-VBMI instruction set.
 
 ```sh
-cmake -DMUMPS_avx512vbmi=on
+cmake -DMUMPS_avx512=on
 ```
 
 Compilers known to work with MUMPS AVX-512-VBMI with Intel AVX-512-VBMI capable CPUs include:
@@ -124,4 +127,5 @@ ARM CPUs at the time of writing don't support AVX-512 in general.
 
 ---
 
-[Matlab](./Readme_matlab.md) can use MUMPS library as well.
+[Matlab](./Readme_matlab.md)
+can use MUMPS library as well.

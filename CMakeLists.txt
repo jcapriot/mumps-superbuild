@@ -77,7 +77,7 @@ DESCRIPTION "Sparse direct parallel solver"
 HOMEPAGE_URL "https://mumps-solver.org/"
 )
 
-if(CMAKE_VERSION VERSION_GREATER 3.30.0 AND CMAKE_VERSION VERSION_LESS 3.30.4)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30.0 AND CMAKE_VERSION VERSION_LESS 3.30.4)
 cmake_policy(SET CMP0168 OLD)
 # workaround to stop repeat FetchContent download on each configure for CMake 3.30.0..3.30.3
 endif()
@@ -115,6 +115,49 @@ include(options.cmake)
 
 if(WIN32 AND BUILD_SHARED_LIBS)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
+if(MUMPS_parallel AND WIN32 AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  find_package(Git REQUIRED)
+  # based on https://github.com/msys2/MINGW-packages/blob/master/mingw-w64-mumps/0004-mpi-module.patch
+  # I've emailed MUMPS dev team on 2026-09-30 to see if they'll switch to MPI-2 "use mpi"
+  # as MPI-4.1 deprecates mpif.h
+  set(_patch "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mumps_mingw_mpi.patch")
+  set(_mumps_source_relative "${mumps_upstream_SOURCE_DIR}")
+  cmake_path(RELATIVE_PATH _mumps_source_relative
+    BASE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" apply --ignore-whitespace --check -p1
+      "--directory=${_mumps_source_relative}" "${_patch}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMAND_ECHO STDOUT
+    RESULT_VARIABLE _can_apply
+    ERROR_VARIABLE _apply_error
+  )
+
+  if("${_can_apply}" STREQUAL "0")
+    execute_process(
+      COMMAND "${GIT_EXECUTABLE}" apply --ignore-whitespace -p1
+        "--directory=${_mumps_source_relative}" "${_patch}"
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      COMMAND_ECHO STDOUT
+      COMMAND_ERROR_IS_FATAL ANY
+    )
+  else()
+    execute_process(
+      COMMAND "${GIT_EXECUTABLE}" apply --ignore-whitespace --reverse --check -p1
+        "--directory=${_mumps_source_relative}" "${_patch}"
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      COMMAND_ECHO STDOUT
+      RESULT_VARIABLE _already_applied
+      ERROR_VARIABLE _reverse_error
+    )
+    if(NOT "${_already_applied}" STREQUAL "0")
+      message(FATAL_ERROR
+        "MinGW MPI patch neither applies nor is already applied:\n${_apply_error}\n${_reverse_error}")
+    endif()
+  endif()
 endif()
 
 # --- RPATH handling for transitive dependencies
