@@ -53,7 +53,7 @@ jobs:
 
     - &prereqs
       name: install prereqs
-      uses: ./.github/workflows/composite-deps
+      uses: ./.github/actions/composite-deps
 
     - &macos_fortran
       name: set Fortran compiler FC (macOS)
@@ -61,10 +61,10 @@ jobs:
       run: echo "FC=gfortran-15" >> $GITHUB_ENV
 
     - name: build and install
-      uses: ./.github/workflows/composite-build
+      uses: ./.github/actions/composite-build
 
     - name: build example
-      uses: ./.github/workflows/composite-example
+      uses: ./.github/actions/composite-example
 
 
   gnu-make:
@@ -171,7 +171,7 @@ jobs:
     - *checkout
     - *prereqs
 
-    - uses: ./.github/workflows/composite-cmake
+    - uses: ./.github/actions/composite-cmake
 
     - name: configure
       run: $CMAKE --workflow --preset default
