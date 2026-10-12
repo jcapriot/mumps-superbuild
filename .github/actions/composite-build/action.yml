@@ -13,8 +13,14 @@ runs:
       -DLAPACK_VENDOR=${{ matrix.lapack_vendor }}
 
   - name: build, test release
+    if: ${{ !matrix.mpich }}
     shell: bash
     run: cmake --workflow default
+
+  - name: build with MPICH
+    if: ${{ matrix.mpich }}
+    shell: bash
+    run: cmake --workflow build
 
   - name: install package
     shell: bash

@@ -6,11 +6,17 @@ runs:
 
   steps:
 
-  - name: configure example
+  - name: example build and test
     shell: bash
+    if: ${{ !matrix.mpich }}
     working-directory: example
     run: cmake --workflow default
 
+  - name: build example MPICH
+    shell: bash
+    if: ${{ matrix.mpich }}
+    working-directory: example
+    run: cmake --workflow build
 
   - name: OpenMP example
     shell: bash
