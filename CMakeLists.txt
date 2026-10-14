@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26...4.5)
-# CMake >= 3.26 as Scalapack build gives confusing errors and even closes Terminal with too old CMake.
+# CMake >= 3.26 as Scalapack build.
 # CMake >= 3.25 for block(), VALIDATOR on find_*()
 # CMake >= 3.24 for FetchContent FIND_PACKAGE_ARGS
 
@@ -44,7 +44,7 @@ if(DEFINED MUMPS_UPSTREAM_VERSION AND NOT DEFINED MUMPS_sha256)
   endif()
 endif()
 
-if(DEFINED FETCHCONTENT_SOURCE_DIR_MUMPS_UPSTREAM)
+if(DEFINED FETCHCONTENT_SOURCE_DIR_MUMPS_UPSTREAM AND NOT FETCHCONTENT_SOURCE_DIR_MUMPS_UPSTREAM STREQUAL "")
   message(STATUS "MUMPS ${MUMPS_UPSTREAM_VERSION}: using source dir ${FETCHCONTENT_SOURCE_DIR_MUMPS_UPSTREAM}")
 else()
   message(STATUS "MUMPS ${MUMPS_UPSTREAM_VERSION}: ${MUMPS_url} ${MUMPS_sha256}")
@@ -86,6 +86,8 @@ enable_testing()
 
 include(GNUInstallDirs)
 
+set(MUMPS_Fortran_MODULE_DIRECTORY ${MUMPS_BINARY_DIR}/include)
+
 # --- Checks and workarounds
 
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
@@ -98,7 +100,8 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
     message(STATUS "Implementing dummy OpenMP to workaround MUMPS source files that use omp_lib but don't guard it with !$ sentinel")
     # OBJECT builds omp_lib.mod, but INTERFACE does not.
     add_library(mumps_dummy_openmp OBJECT src/dummy_openmp.f90)
-    target_include_directories(mumps_dummy_openmp INTERFACE ${CMAKE_CURRENT_BINARY_DIR})  #Fortran_MODULE_DIRECTORY is empty by default
+    set_property(TARGET mumps_dummy_openmp PROPERTY Fortran_MODULE_DIRECTORY ${MUMPS_Fortran_MODULE_DIRECTORY})
+    target_include_directories(mumps_dummy_openmp INTERFACE ${MUMPS_Fortran_MODULE_DIRECTORY})
   endif()
 endif()
 
