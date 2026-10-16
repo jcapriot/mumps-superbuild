@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26...4.5)
-# CMake >= 3.26 as Scalapack build gives confusing errors and even closes Terminal with too old CMake.
+# CMake >= 3.26 as Scalapack build.
 # CMake >= 3.25 for block(), VALIDATOR on find_*()
 # CMake >= 3.24 for FetchContent FIND_PACKAGE_ARGS
 
@@ -44,7 +44,7 @@ if(DEFINED MUMPS_UPSTREAM_VERSION AND NOT DEFINED MUMPS_sha256)
   endif()
 endif()
 
-if(DEFINED FETCHCONTENT_SOURCE_DIR_MUMPS_UPSTREAM)
+if(DEFINED FETCHCONTENT_SOURCE_DIR_MUMPS_UPSTREAM AND NOT FETCHCONTENT_SOURCE_DIR_MUMPS_UPSTREAM STREQUAL "")
   message(STATUS "MUMPS ${MUMPS_UPSTREAM_VERSION}: using source dir ${FETCHCONTENT_SOURCE_DIR_MUMPS_UPSTREAM}")
 else()
   message(STATUS "MUMPS ${MUMPS_UPSTREAM_VERSION}: ${MUMPS_url} ${MUMPS_sha256}")
@@ -86,6 +86,8 @@ enable_testing()
 
 include(GNUInstallDirs)
 
+set(MUMPS_Fortran_MODULE_DIRECTORY ${MUMPS_BINARY_DIR}/include)
+
 # --- Checks and workarounds
 
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
@@ -98,7 +100,8 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
     message(STATUS "Implementing dummy OpenMP to workaround MUMPS source files that use omp_lib but don't guard it with !$ sentinel")
     # OBJECT builds omp_lib.mod, but INTERFACE does not.
     add_library(mumps_dummy_openmp OBJECT src/dummy_openmp.f90)
-    target_include_directories(mumps_dummy_openmp INTERFACE ${CMAKE_CURRENT_BINARY_DIR})  #Fortran_MODULE_DIRECTORY is empty by default
+    set_property(TARGET mumps_dummy_openmp PROPERTY Fortran_MODULE_DIRECTORY ${MUMPS_Fortran_MODULE_DIRECTORY})
+    target_include_directories(mumps_dummy_openmp INTERFACE ${MUMPS_Fortran_MODULE_DIRECTORY})
   endif()
 endif()
 
@@ -118,46 +121,7 @@ if(WIN32 AND BUILD_SHARED_LIBS)
 endif()
 
 if(MUMPS_parallel AND WIN32 AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-  find_package(Git REQUIRED)
-  # based on https://github.com/msys2/MINGW-packages/blob/master/mingw-w64-mumps/0004-mpi-module.patch
-  # I've emailed MUMPS dev team on 2026-09-30 to see if they'll switch to MPI-2 "use mpi"
-  # as MPI-4.1 deprecates mpif.h
-  set(_patch "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mumps_mingw_mpi.patch")
-  set(_mumps_source_relative "${mumps_upstream_SOURCE_DIR}")
-  cmake_path(RELATIVE_PATH _mumps_source_relative
-    BASE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-
-  execute_process(
-    COMMAND "${GIT_EXECUTABLE}" apply --ignore-whitespace --check -p1
-      "--directory=${_mumps_source_relative}" "${_patch}"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    COMMAND_ECHO STDOUT
-    RESULT_VARIABLE _can_apply
-    ERROR_VARIABLE _apply_error
-  )
-
-  if("${_can_apply}" STREQUAL "0")
-    execute_process(
-      COMMAND "${GIT_EXECUTABLE}" apply --ignore-whitespace -p1
-        "--directory=${_mumps_source_relative}" "${_patch}"
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      COMMAND_ECHO STDOUT
-      COMMAND_ERROR_IS_FATAL ANY
-    )
-  else()
-    execute_process(
-      COMMAND "${GIT_EXECUTABLE}" apply --ignore-whitespace --reverse --check -p1
-        "--directory=${_mumps_source_relative}" "${_patch}"
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      COMMAND_ECHO STDOUT
-      RESULT_VARIABLE _already_applied
-      ERROR_VARIABLE _reverse_error
-    )
-    if(NOT "${_already_applied}" STREQUAL "0")
-      message(FATAL_ERROR
-        "MinGW MPI patch neither applies nor is already applied:\n${_apply_error}\n${_reverse_error}")
-    endif()
-  endif()
+  include(mumps_mingw_mpi.cmake)
 endif()
 
 # --- RPATH handling for transitive dependencies

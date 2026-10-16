@@ -123,8 +123,6 @@ target_link_options(mumps_common PRIVATE
   "$<$<BOOL:${MSVC}>:/LIBPATH:${CMAKE_Fortran_IMPLICIT_LINK_DIRECTORIES}>"
 )
 
-# use MPI_Fortran_INCLUDE_DIRS directly to avoid MPICH Fortran -fallow flag leakage
-
 foreach(t IN ITEMS mumps_common mumps_common_C mumps_common_Fortran)
   target_include_directories(${t} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_SOURCE_DIR}/../include>"
@@ -153,6 +151,9 @@ foreach(t IN ITEMS mumps_common mumps_common_C mumps_common_Fortran)
   target_compile_definitions(${t} PRIVATE ${ORDERING_DEFS})
 endforeach()
 
+set_property(TARGET mumps_common_Fortran PROPERTY Fortran_MODULE_DIRECTORY ${MUMPS_Fortran_MODULE_DIRECTORY})
+target_include_directories(mumps_common_Fortran PRIVATE ${MUMPS_Fortran_MODULE_DIRECTORY})
+
 target_link_libraries(mumps_common PRIVATE
 MPI::MPI_Fortran MPI::MPI_C
 $<$<BOOL:${MUMPS_openmp}>:OpenMP::OpenMP_Fortran>
@@ -168,8 +169,8 @@ endif()
 set_target_properties(mumps_common PROPERTIES
 EXPORT_NAME COMMON
 VERSION ${MUMPS_ACTUAL_VERSION}
-LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
-ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+LIBRARY_OUTPUT_DIRECTORY ${MUMPS_BINARY_DIR}/lib
+ARCHIVE_OUTPUT_DIRECTORY ${MUMPS_BINARY_DIR}/lib
 )
 
 install(TARGETS mumps_common EXPORT ${PROJECT_NAME}-targets)
@@ -262,6 +263,9 @@ foreach(t IN ITEMS ${a}mumps ${a}mumps_C ${a}mumps_Fortran)
 
 endforeach()
 
+set_property(TARGET ${a}mumps_Fortran PROPERTY Fortran_MODULE_DIRECTORY ${MUMPS_Fortran_MODULE_DIRECTORY})
+target_include_directories(${a}mumps_Fortran PRIVATE ${MUMPS_Fortran_MODULE_DIRECTORY})
+
 target_link_libraries(${a}mumps PRIVATE
 MPI::MPI_Fortran
 $<$<BOOL:${MUMPS_openmp}>:OpenMP::OpenMP_Fortran>
@@ -273,8 +277,8 @@ string(TOUPPER ${a} aup)
 set_target_properties(${a}mumps PROPERTIES
 EXPORT_NAME ${aup}MUMPS
 VERSION ${MUMPS_ACTUAL_VERSION}
-LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
-ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+LIBRARY_OUTPUT_DIRECTORY ${MUMPS_BINARY_DIR}/lib
+ARCHIVE_OUTPUT_DIRECTORY ${MUMPS_BINARY_DIR}/lib
 )
 
 if(BUILD_SHARED_LIBS AND APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
