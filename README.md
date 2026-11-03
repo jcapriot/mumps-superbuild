@@ -9,7 +9,6 @@ MUMPS is a Fortran library by the
 MUMPS Technologies team co-founded by Jean-Yves L'Excellent from Graal / ROMA.
 MUMPS has optional C interfaces for MPI and/or OpenMP parallel
 (or serial `cmake --workflow nompi`) solving of sparse linear systems of equations.
-Once MUMPS has been built / packaged, a consuming project doesn't have to have a Fortran compiler.
 
 This repository provides a CMake superbuild project using CMake's built-in
 [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
@@ -232,8 +231,7 @@ target_link_libraries(myapp PRIVATE MUMPS::DMUMPS)   # or MUMPS::MUMPS for every
 cmake -B build -DCMAKE_PREFIX_PATH=~/.local
 ```
 
-Consumers that enable only C are supported; the package does not require the consumer to have a
-Fortran compiler or OpenMP.
+Consumers that enable only C without MPI `cmake -DMUMPS_parallel=false` are supported; the package does not require the consumer to have a Fortran compiler or OpenMP.
 
 Linking the MUMPS binaries into a user-program is project-dependent.
 An example using the examples in this project with GNU GCC, using the "mpicxx" MPI compiler wrapper:

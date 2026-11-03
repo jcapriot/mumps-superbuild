@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.26)
 
 project(MUMPSExamples
-LANGUAGES C CXX Fortran
+LANGUAGES C CXX
 )
 
 enable_testing()
@@ -20,6 +20,12 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
 endif()
 
 find_package(MUMPS CONFIG REQUIRED)
+
+if(MUMPS_parallel)
+  # MPI::MPI_Fortran is needed for parallel MUMPS
+  enable_language(Fortran)
+endif()
+
 message(STATUS "MUMPS_DIR: ${MUMPS_DIR}
 parallel: ${MUMPS_parallel}
 Scotch: ${MUMPS_scotch}
@@ -52,7 +58,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/mpi_launcher.cmake)
 function(precision_ex a lang)
 
   add_executable(${a}_example_${lang} ${a}_example.${lang})
-  target_link_libraries(${a}_example_${lang} PRIVATE MUMPS::MUMPS MPI::MPI_Fortran)
+  target_link_libraries(${a}_example_${lang} PRIVATE MUMPS::MUMPS)
   if(lang STREQUAL "cpp")
     target_link_libraries(${a}_example_${lang} PRIVATE
       $<$<BOOL:${MUMPS_openmp}>:OpenMP::OpenMP_CXX>
@@ -64,7 +70,7 @@ function(precision_ex a lang)
       $<$<BOOL:${MUMPS_parallel}>:MPI::MPI_C>
     )
   endif()
-  # always link MPI (MPI::MPI_Fortran and MPI::MPI_C) as we use the libmpiseq if not MUMPS_parallel
+  # always link MPI::MPI_C as we use the libmpiseq if not MUMPS_parallel
 
   add_test(NAME ${a}_example_${lang} COMMAND ${a}_example_${lang})
 
